@@ -3,6 +3,8 @@
 
 #include <chrono>
 #include <assert.h>
+#include <cstdlib>
+#include <math.h>
 
 #include <mach/mach_init.h>
 #include <mach/vm_map.h>
@@ -12,6 +14,7 @@ static const int bufWidth = 1024;
 static const int bufHeight = 768;
 static const int bytesPerPixel = 4;
 static const int bufMemSize = bufHeight * bufWidth * bytesPerPixel;
+static const float PI = 3.14159265;
 
 void* Allocate(size_t size)
 {
@@ -60,12 +63,54 @@ void RenderGradient()
   }  
 }
 
+void PlaySound(sf::Sound& sound, sf::SoundBuffer& buffer)
+{
+  int samplesPerSecond = 44100;
+  int freq = 261;
+  int samplesPerVibration = samplesPerSecond / freq;
+  int numVibrations = 10;
+  int numChannels = 2;
+  int bufSizeBytes = samplesPerVibration * numVibrations * numChannels * sizeof(short); 
+  void* buf = malloc(bufSizeBytes);
+  short* sample = (short*)buf; 
+  short volume = 5000;
+  for (int i = 0; i < numVibrations; ++i)
+  {
+    float theta;
+    for (int j = 0; j < (samplesPerVibration / 2); ++j)
+    {
+      theta = PI * (float)j / ((float)samplesPerVibration / 2.);
+      *sample = volume * sin(theta);
+      ++sample;
+      *sample = volume * sin(theta);
+      ++sample;
+    }
+    for (int k = 0; k < (samplesPerVibration / 2); ++k)
+    {
+      theta = PI * (float)k / ((float)samplesPerVibration / 2.);
+      *sample = -volume * sin(theta);
+      ++sample;
+      *sample = -volume * sin(theta);
+      ++sample;
+    }
+  }
+
+  buffer.loadFromSamples((const short*)buf, bufSizeBytes / 2, 2, 44100);
+  sound.setBuffer(buffer);
+  sound.setLoop(true);
+  sound.play();
+}
+
 int main(int, char const**)
 {
   const int page_size = 4096;
   bufMem = Allocate((bufMemSize / page_size) * page_size);
-  sf::RenderWindow window(sf::VideoMode(800, 600), "SFML window");
 
+  sf::Sound sound;
+  sf::SoundBuffer buffer;
+  PlaySound(sound, buffer);
+
+  sf::RenderWindow window(sf::VideoMode(800, 600), "handmade");
   while (window.isOpen())
   {
     auto start = std::chrono::steady_clock::now();
@@ -99,7 +144,9 @@ int main(int, char const**)
     auto diff = end - start;
     int ms_elapsed = std::chrono::duration <double, std::milli> (diff).count();
     int fps = 1000/ms_elapsed;
-    printf("%i\n", fps);
+#ifdef DEBUG
+    printf("fps: %i\n", fps);
+#endif
   }
 
   return 0;
