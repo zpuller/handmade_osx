@@ -43,12 +43,8 @@ void* Allocate(size_t size)
   return data;
 }
 
-unsigned char xOffset = 0;
-unsigned char yOffset = 0;
-void RenderGradient()
+void RenderGradient(unsigned char xOffset, unsigned char yOffset)
 {
-  ++xOffset;
-  yOffset = yOffset + 2;
   unsigned char* pixel = (unsigned char*)bufMem;
 
   for (int i = 0; i < bufHeight; ++i)
@@ -58,10 +54,10 @@ void RenderGradient()
       *pixel = 0; 
       ++pixel;
 
-      *pixel = i + xOffset;
+      *pixel = i + 3 * yOffset;
       ++pixel;
 
-      *pixel = j + yOffset;
+      *pixel = j + 3 * xOffset;
       ++pixel;
 
       *pixel = 255;
@@ -70,16 +66,17 @@ void RenderGradient()
   }  
 }
 
-void PlaySound(sf::Sound& sound, sf::SoundBuffer& buffer)
+void* PlaySound(sf::Sound& sound, sf::SoundBuffer& buffer)
 {
   int samplesPerSecond = 44100;
   int freq = 261;
   int samplesPerVibration = samplesPerSecond / freq;
   int numVibrations = 10;
   int numChannels = 2;
-  int bufSizeBytes = samplesPerVibration * numVibrations * numChannels * sizeof(short); 
-  void* buf = malloc(bufSizeBytes);
-  short* sample = (short*)buf; 
+  int numSamples = samplesPerVibration * numVibrations * numChannels;
+  int bufSizeBytes = numSamples * sizeof(short);
+  void* sampleBuf = malloc(bufSizeBytes);
+  short* sample = (short*)sampleBuf;
   short volume = 5000;
   for (int i = 0; i < numVibrations; ++i)
   {
@@ -102,10 +99,12 @@ void PlaySound(sf::Sound& sound, sf::SoundBuffer& buffer)
     }
   }
 
-  buffer.loadFromSamples((const short*)buf, bufSizeBytes / 2, 2, 44100);
+  buffer.loadFromSamples((const short*)sampleBuf, numSamples, 2, 44100);
   sound.setBuffer(buffer);
   sound.setLoop(true);
   sound.play();
+
+  return sampleBuf;
 }
 
 int main(int, char const**)
@@ -115,7 +114,7 @@ int main(int, char const**)
 
   sf::Sound sound;
   sf::SoundBuffer buffer;
-  PlaySound(sound, buffer);
+  void* sampleBuf = PlaySound(sound, buffer);
 
 #ifdef DEBUG
   sf::Font MyFont;
@@ -125,18 +124,33 @@ int main(int, char const**)
     exit(1);
   }
 
-  sf::Text text("", MyFont, 50);
+  sf::Text text("", MyFont, 20);
   auto last = std::chrono::steady_clock::now();
   auto now = std::chrono::steady_clock::now();
   auto diff = now - last;
   int ms_elapsed;
   int fps;
+
+  int mouseX;
+  int mouseY;
 #endif
 
   sf::RenderWindow window(sf::VideoMode(800, 600), "handmade");
+  window.setKeyRepeatEnabled(false);
+  unsigned char xOffset = 0;
+  unsigned char yOffset = 0;
+  bool wKey, aKey, sKey, dKey = false;
   while (window.isOpen())
   {
-    RenderGradient();
+    if (wKey)
+      ++yOffset;
+    if (aKey)
+      ++xOffset;
+    if (sKey)
+      --yOffset;
+    if (dKey)
+      --xOffset;
+    RenderGradient(xOffset, yOffset);
 
     sf::Image image;
     image.create(bufWidth,bufHeight,(unsigned char*)bufMem);
@@ -155,6 +169,38 @@ int main(int, char const**)
       if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape) {
         window.close();
       }
+
+      if (event.type == sf::Event::KeyPressed)
+      {
+        if (event.key.code == sf::Keyboard::W)
+          wKey = true;
+        if (event.key.code == sf::Keyboard::A)
+          aKey = true;
+        if (event.key.code == sf::Keyboard::S)
+          sKey = true;
+        if (event.key.code == sf::Keyboard::D)
+          dKey = true;
+      }
+
+      if (event.type == sf::Event::KeyReleased)
+      {
+        if (event.key.code == sf::Keyboard::W)
+          wKey = false;
+        if (event.key.code == sf::Keyboard::A)
+          aKey = false;
+        if (event.key.code == sf::Keyboard::S)
+          sKey = false;
+        if (event.key.code == sf::Keyboard::D)
+          dKey = false;
+      }
+
+      if (event.type == sf::Event::MouseMoved)
+      {
+#ifdef DEBUG
+        mouseX = event.mouseMove.x;
+        mouseY = event.mouseMove.y;
+#endif
+      }
     }
 
     window.clear();
@@ -166,7 +212,7 @@ int main(int, char const**)
     ms_elapsed = std::chrono::duration <double, std::milli> (diff).count();
     fps = 1000/ms_elapsed;
     char fpsStr[2];
-    sprintf(fpsStr, "%d fps", fps);
+    sprintf(fpsStr, "%i fps . mouseX: %i . mouseY: %i", fps, mouseX, mouseY);
     text.setString(fpsStr);
     window.draw(text);
 #endif
