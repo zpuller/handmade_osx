@@ -16,6 +16,13 @@ static const int bytesPerPixel = 4;
 static const int bufMemSize = bufHeight * bufWidth * bytesPerPixel;
 static const float PI = 3.14159265;
 
+unsigned long long CycleCount() 
+{
+        unsigned long long d;
+        __asm__ __volatile__ ("rdtsc" : "=A" (d) );
+        return d;
+}
+
 void* Allocate(size_t size)
 {
   void* data;
@@ -110,11 +117,25 @@ int main(int, char const**)
   sf::SoundBuffer buffer;
   PlaySound(sound, buffer);
 
+#ifdef DEBUG
+  sf::Font MyFont;
+  if (!MyFont.loadFromFile("/Library/Fonts//Arial.ttf"))
+  {
+    printf("font not found!\n");
+    exit(1);
+  }
+
+  sf::Text text("", MyFont, 50);
+  auto last = std::chrono::steady_clock::now();
+  auto now = std::chrono::steady_clock::now();
+  auto diff = now - last;
+  int ms_elapsed;
+  int fps;
+#endif
+
   sf::RenderWindow window(sf::VideoMode(800, 600), "handmade");
   while (window.isOpen())
   {
-    auto start = std::chrono::steady_clock::now();
-
     RenderGradient();
 
     sf::Image image;
@@ -138,15 +159,19 @@ int main(int, char const**)
 
     window.clear();
     window.draw(sprite);
+#ifdef DEBUG
+    now = std::chrono::steady_clock::now();
+    diff = now - last;
+    last = now;
+    ms_elapsed = std::chrono::duration <double, std::milli> (diff).count();
+    fps = 1000/ms_elapsed;
+    char fpsStr[2];
+    sprintf(fpsStr, "%d fps", fps);
+    text.setString(fpsStr);
+    window.draw(text);
+#endif
     window.display();
 
-    auto end = std::chrono::steady_clock::now();
-    auto diff = end - start;
-    int ms_elapsed = std::chrono::duration <double, std::milli> (diff).count();
-    int fps = 1000/ms_elapsed;
-#ifdef DEBUG
-    printf("fps: %i\n", fps);
-#endif
   }
 
   return 0;
