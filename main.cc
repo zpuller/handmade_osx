@@ -4,6 +4,7 @@
 #include <chrono>
 #include <assert.h>
 #include <cstdlib>
+#include <unistd.h>
 #include <math.h>
 
 #include <mach/mach_init.h>
@@ -113,15 +114,18 @@ int main(int, char const**)
   }
 
   sf::Text text("", MyFont, 20);
+#endif
+
   auto last = std::chrono::steady_clock::now();
   auto now = std::chrono::steady_clock::now();
   auto diff = now - last;
   int msElapsed;
   int fps;
+  int fpsTarget = 30;
+  int msTarget = 1000 / fpsTarget;
 
   int mouseX;
   int mouseY;
-#endif
 
   sf::RenderWindow window(sf::VideoMode(800, 600), "handmade");
   window.setKeyRepeatEnabled(false);
@@ -169,26 +173,40 @@ int main(int, char const**)
 
       if (event.type == sf::Event::MouseMoved)
       {
-#ifdef DEBUG
         mouseX = event.mouseMove.x;
         mouseY = event.mouseMove.y;
-#endif
       }
     }
 
     window.clear();
     window.draw(sprite);
-#ifdef DEBUG
+
     now = std::chrono::steady_clock::now();
     diff = now - last;
-    last = now;
     msElapsed = std::chrono::duration <double, std::milli> (diff).count();
+    if (msElapsed < msTarget)
+    {
+      usleep(1000 * (msTarget - msElapsed));
+      now = std::chrono::steady_clock::now();
+      diff = now - last;
+      msElapsed = std::chrono::duration <double, std::milli> (diff).count();
+      printf("ms: %i\n", msElapsed);
+    }
+    else
+    {
+      //TODO missed rate!
+      printf("missed, ms: %i\n", msElapsed);
+    }
     fps = 1000/msElapsed;
+    last = now;
+
+#ifdef DEBUG
     char fpsStr[2];
     sprintf(fpsStr, "%i fps . mouseX: %i . mouseY: %i", fps, mouseX, mouseY);
     text.setString(fpsStr);
     window.draw(text);
 #endif
+
     window.display();
   }
 

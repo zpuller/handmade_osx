@@ -30,6 +30,7 @@ void GameUpdateAndRender(GameMemory& memory, GameOffscreenBuffer& offscreenBuffe
     {
       PermanentState zeroState = {};
       memory.permanentState = zeroState;
+      memory.isInitialized = true;
     }
 
     if (input.wKey)
