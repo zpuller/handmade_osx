@@ -18,9 +18,9 @@ static const float PI = 3.14159265;
 
 unsigned long long CycleCount() 
 {
-        unsigned long long d;
-        __asm__ __volatile__ ("rdtsc" : "=A" (d) );
-        return d;
+  unsigned long long d;
+  __asm__ __volatile__ ("rdtsc" : "=A" (d) );
+  return d;
 }
 
 void* Allocate(size_t size)
