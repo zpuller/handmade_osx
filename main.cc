@@ -11,11 +11,12 @@
 
 #include "handmade.h"
 
-static void* bufMem;
 static const int bufWidth = 1024;
 static const int bufHeight = 768;
 static const int bytesPerPixel = 4;
-static const int bufMemSize = bufHeight * bufWidth * bytesPerPixel;
+
+static const int pageSize = 4096;
+
 static const float PI = 3.14159265;
 
 unsigned long long CycleCount() 
@@ -88,12 +89,20 @@ void* PlaySound(sf::Sound& sound, sf::SoundBuffer& buffer)
 
 int main(int, char const**)
 {
-  const int page_size = 4096;
-  bufMem = Allocate((bufMemSize / page_size) * page_size);
-
   sf::Sound sound;
   sf::SoundBuffer buffer;
   void* sampleBuf = PlaySound(sound, buffer);
+
+  int bufMemSize = bufHeight * bufWidth * bytesPerPixel;
+  void* bufMem = Allocate((bufMemSize / pageSize) * pageSize);
+  GameOffscreenBuffer offscreenBuffer;
+  offscreenBuffer.width = bufWidth; 
+  offscreenBuffer.height = bufHeight;
+  offscreenBuffer.pixels = bufMem;
+
+  GameInput input = {};
+
+  GameMemory* gameMem = (GameMemory*)Allocate(4096);//TODO mem size macros
 
 #ifdef DEBUG
   sf::Font MyFont;
@@ -107,7 +116,7 @@ int main(int, char const**)
   auto last = std::chrono::steady_clock::now();
   auto now = std::chrono::steady_clock::now();
   auto diff = now - last;
-  int ms_elapsed;
+  int msElapsed;
   int fps;
 
   int mouseX;
@@ -116,20 +125,9 @@ int main(int, char const**)
 
   sf::RenderWindow window(sf::VideoMode(800, 600), "handmade");
   window.setKeyRepeatEnabled(false);
-  unsigned char xOffset = 0;
-  unsigned char yOffset = 0;
-  bool wKey, aKey, sKey, dKey = false;
   while (window.isOpen())
   {
-    if (wKey)
-      ++yOffset;
-    if (aKey)
-      ++xOffset;
-    if (sKey)
-      --yOffset;
-    if (dKey)
-      --xOffset;
-    RenderGradient(bufMem, bufWidth, bufHeight, xOffset, yOffset);
+    GameUpdateAndRender(*gameMem, offscreenBuffer, input);
 
     sf::Image image;
     image.create(bufWidth,bufHeight,(unsigned char*)bufMem);
@@ -145,32 +143,28 @@ int main(int, char const**)
         window.close();
       }
 
-      if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape) {
-        window.close();
-      }
-
       if (event.type == sf::Event::KeyPressed)
       {
         if (event.key.code == sf::Keyboard::W)
-          wKey = true;
+          input.wKey = true;
         if (event.key.code == sf::Keyboard::A)
-          aKey = true;
+          input.aKey = true;
         if (event.key.code == sf::Keyboard::S)
-          sKey = true;
+          input.sKey = true;
         if (event.key.code == sf::Keyboard::D)
-          dKey = true;
+          input.dKey = true;
       }
 
       if (event.type == sf::Event::KeyReleased)
       {
         if (event.key.code == sf::Keyboard::W)
-          wKey = false;
+          input.wKey = false;
         if (event.key.code == sf::Keyboard::A)
-          aKey = false;
+          input.aKey = false;
         if (event.key.code == sf::Keyboard::S)
-          sKey = false;
+          input.sKey = false;
         if (event.key.code == sf::Keyboard::D)
-          dKey = false;
+          input.dKey = false;
       }
 
       if (event.type == sf::Event::MouseMoved)
@@ -188,8 +182,8 @@ int main(int, char const**)
     now = std::chrono::steady_clock::now();
     diff = now - last;
     last = now;
-    ms_elapsed = std::chrono::duration <double, std::milli> (diff).count();
-    fps = 1000/ms_elapsed;
+    msElapsed = std::chrono::duration <double, std::milli> (diff).count();
+    fps = 1000/msElapsed;
     char fpsStr[2];
     sprintf(fpsStr, "%i fps . mouseX: %i . mouseY: %i", fps, mouseX, mouseY);
     text.setString(fpsStr);
