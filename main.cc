@@ -9,6 +9,8 @@
 #include <mach/mach_init.h>
 #include <mach/vm_map.h>
 
+#include "handmade.h"
+
 static void* bufMem;
 static const int bufWidth = 1024;
 static const int bufHeight = 768;
@@ -41,29 +43,6 @@ void* Allocate(size_t size)
       data = NULL;
 
   return data;
-}
-
-void RenderGradient(unsigned char xOffset, unsigned char yOffset)
-{
-  unsigned char* pixel = (unsigned char*)bufMem;
-
-  for (int i = 0; i < bufHeight; ++i)
-  {
-    for (int j = 0; j < bufWidth; ++j)
-    {
-      *pixel = 0; 
-      ++pixel;
-
-      *pixel = i + 3 * yOffset;
-      ++pixel;
-
-      *pixel = j + 3 * xOffset;
-      ++pixel;
-
-      *pixel = 255;
-      ++pixel;
-    }
-  }  
 }
 
 void* PlaySound(sf::Sound& sound, sf::SoundBuffer& buffer)
@@ -150,7 +129,7 @@ int main(int, char const**)
       --yOffset;
     if (dKey)
       --xOffset;
-    RenderGradient(xOffset, yOffset);
+    RenderGradient(bufMem, bufWidth, bufHeight, xOffset, yOffset);
 
     sf::Image image;
     image.create(bufWidth,bufHeight,(unsigned char*)bufMem);
@@ -217,7 +196,6 @@ int main(int, char const**)
     window.draw(text);
 #endif
     window.display();
-
   }
 
   return 0;
