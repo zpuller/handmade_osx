@@ -11,10 +11,10 @@ void RenderGradient(void* pixels, int width, int height, unsigned char xOffset, 
       *pixel = 0; 
       ++pixel;
 
-      *pixel = i + 3 * yOffset;
+      *pixel = i + 5 * yOffset;
       ++pixel;
 
-      *pixel = j + 3 * xOffset;
+      *pixel = j + 5 * xOffset;
       ++pixel;
 
       *pixel = 255;
@@ -23,16 +23,15 @@ void RenderGradient(void* pixels, int width, int height, unsigned char xOffset, 
   }  
 }
 
+void Initialize(GameMemory& memory)
+{
+    PermanentState zeroState = {};
+    memory.permanentState = zeroState;
+    memory.isInitialized = true;
+}
+
 void GameUpdateAndRender(GameMemory& memory, GameOffscreenBuffer& offscreenBuffer, GameInput& input)
 {
-    //TODO separate init call?
-    if (!memory.isInitialized)
-    {
-      PermanentState zeroState = {};
-      memory.permanentState = zeroState;
-      memory.isInitialized = true;
-    }
-
     if (input.wKey)
       ++memory.permanentState.yOffset;
     if (input.aKey)
@@ -44,3 +43,5 @@ void GameUpdateAndRender(GameMemory& memory, GameOffscreenBuffer& offscreenBuffe
 
   RenderGradient(offscreenBuffer.pixels, offscreenBuffer.width, offscreenBuffer.height, memory.permanentState.xOffset, memory.permanentState.yOffset);
 }
+
+Fns fns = { Initialize, GameUpdateAndRender };

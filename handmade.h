@@ -30,4 +30,9 @@ struct GameInput
   bool dKey;
 };
 
-void GameUpdateAndRender(GameMemory& memory, GameOffscreenBuffer& offscreenBuffer, GameInput& input);
+// hack
+struct Fns
+{
+  void (*Initialize)(GameMemory&);
+  void (*GameUpdateAndRender)(GameMemory&, GameOffscreenBuffer&, GameInput&);
+};

@@ -1,4 +1,5 @@
 main
 *.o
+*.dylib
 *.swp
 *.dSYM

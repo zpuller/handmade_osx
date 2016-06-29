@@ -6,19 +6,31 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <math.h>
+#include <dlfcn.h>
+#include <sys/stat.h>
 
 #include <mach/mach_init.h>
 #include <mach/vm_map.h>
 
 #include "handmade.h"
 
+#define Kilobytes(x) 1024 * x
+#define Megabytes(x) 1024 * Kilobytes(x)
+#define Gigabytes(x) 1024 * Megabytes(x)
+
 static const int bufWidth = 1024;
 static const int bufHeight = 768;
 static const int bytesPerPixel = 4;
 
-static const int pageSize = 4096;
+static const int pageSize = Kilobytes(4);
 
 static const float PI = 3.14159265;
+
+long GetFileCreationTime(const char *path) {
+    struct stat attr;
+    stat(path, &attr);
+    return attr.st_mtime;
+}
 
 unsigned long long CycleCount() 
 {
@@ -33,7 +45,7 @@ void* Allocate(size_t size)
   kern_return_t err;
 
   assert(size != 0);
-  assert((size % 4096) == 0);
+  assert((size % pageSize) == 0);
 
   err = vm_allocate(  (vm_map_t) mach_task_self(),
                       (vm_address_t*) &data,
@@ -90,6 +102,15 @@ void* PlaySound(sf::Sound& sound, sf::SoundBuffer& buffer)
 
 int main(int, char const**)
 {
+  const char *lib_name = "./handmade.dylib";
+  long new_game_modified_time = 0;
+  long old_game_modified_time = 0;
+
+  void *lib_handle = dlopen(lib_name, RTLD_NOW);
+  assert(lib_handle);
+  Fns* fns = (Fns*)dlsym(lib_handle, "fns");
+  assert(fns);
+
   sf::Sound sound;
   sf::SoundBuffer buffer;
   void* sampleBuf = PlaySound(sound, buffer);
@@ -103,7 +124,8 @@ int main(int, char const**)
 
   GameInput input = {};
 
-  GameMemory* gameMem = (GameMemory*)Allocate(4096);//TODO mem size macros
+  GameMemory* gameMem = (GameMemory*)Allocate(Kilobytes(4));
+  fns->Initialize(*gameMem);
 
 #ifdef DEBUG
   sf::Font MyFont;
@@ -131,7 +153,15 @@ int main(int, char const**)
   window.setKeyRepeatEnabled(false);
   while (window.isOpen())
   {
-    GameUpdateAndRender(*gameMem, offscreenBuffer, input);
+    new_game_modified_time = GetFileCreationTime(lib_name);
+    if (new_game_modified_time != old_game_modified_time)
+    {
+      dlclose(lib_handle);
+      lib_handle = dlopen(lib_name, RTLD_NOW);
+      fns = (Fns*)dlsym(lib_handle, "fns");
+    }
+    old_game_modified_time = new_game_modified_time;
+    fns->GameUpdateAndRender(*gameMem, offscreenBuffer, input);
 
     sf::Image image;
     image.create(bufWidth,bufHeight,(unsigned char*)bufMem);
@@ -186,19 +216,17 @@ int main(int, char const**)
     msElapsed = std::chrono::duration <double, std::milli> (diff).count();
     if (msElapsed < msTarget)
     {
-      usleep(1000 * (msTarget - msElapsed));
+      usleep(1000 * (msTarget - msElapsed - 1));
       now = std::chrono::steady_clock::now();
       diff = now - last;
       msElapsed = std::chrono::duration <double, std::milli> (diff).count();
-      printf("ms: %i\n", msElapsed);
     }
     else
     {
       //TODO missed rate!
-      printf("missed, ms: %i\n", msElapsed);
     }
-    fps = 1000/msElapsed;
     last = now;
+    fps = 1000/msElapsed;
 
 #ifdef DEBUG
     char fpsStr[2];
@@ -209,6 +237,8 @@ int main(int, char const**)
 
     window.display();
   }
+
+  dlclose(lib_handle);
 
   return 0;
 }
