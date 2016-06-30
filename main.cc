@@ -65,7 +65,7 @@ void* PlaySound(sf::Sound& sound, sf::SoundBuffer& buffer)
   int freq = 261;
   int samplesPerVibration = samplesPerSecond / freq;
   int numVibrations = 10;
-  int numChannels = 2;
+  int numChannels = 1;
   int numSamples = samplesPerVibration * numVibrations * numChannels;
   int bufSizeBytes = numSamples * sizeof(short);
   void* sampleBuf = malloc(bufSizeBytes);
@@ -79,22 +79,30 @@ void* PlaySound(sf::Sound& sound, sf::SoundBuffer& buffer)
       theta = PI * (float)j / ((float)samplesPerVibration / 2.);
       *sample = volume * sin(theta);
       ++sample;
-      *sample = volume * sin(theta);
-      ++sample;
+      //*sample = volume * sin(theta);
+      //++sample;
     }
     for (int k = 0; k < (samplesPerVibration / 2); ++k)
     {
       theta = PI * (float)k / ((float)samplesPerVibration / 2.);
       *sample = -volume * sin(theta);
       ++sample;
-      *sample = -volume * sin(theta);
-      ++sample;
+      //*sample = -volume * sin(theta);
+      //++sample;
     }
   }
 
-  buffer.loadFromSamples((const short*)sampleBuf, numSamples, 2, 44100);
+  buffer.loadFromSamples((const short*)sampleBuf, numSamples, numChannels, 44100);
   sound.setBuffer(buffer);
   sound.setLoop(true);
+  ///////
+  sf::Listener::setPosition(400.f, 0.f, 300.f);
+  sf::Listener::setDirection(0.f, 0.f, 1.f);
+  sound.setPosition(2.f, 0.f, -5.f);
+  sound.setMinDistance(5.f);
+  sound.setAttenuation(0.1);
+  ///////
+
   sound.play();
 
   return sampleBuf;
@@ -149,7 +157,7 @@ int main(int, char const**)
   int mouseX;
   int mouseY;
 
-  sf::RenderWindow window(sf::VideoMode(800, 600), "handmade");
+  sf::RenderWindow window(sf::VideoMode(800, 600), "handmade");//TODO where are window dimensions stored??
   window.setKeyRepeatEnabled(false);
   while (window.isOpen())
   {
@@ -205,6 +213,7 @@ int main(int, char const**)
       {
         mouseX = event.mouseMove.x;
         mouseY = event.mouseMove.y;
+        sound.setPosition(mouseX, 0.f, mouseY);
       }
     }
 
