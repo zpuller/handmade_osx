@@ -12,7 +12,7 @@
 #include <mach/mach_init.h>
 #include <mach/vm_map.h>
 
-#include "handmade.h"
+#include <handmade/handmade.h>
 
 #define Kilobytes(x) 1024 * x
 #define Megabytes(x) 1024 * Kilobytes(x)
@@ -64,7 +64,7 @@ void* PlaySound(sf::Sound& sound, sf::SoundBuffer& buffer)
   int samplesPerSecond = 44100;
   int freq = 261;
   int samplesPerVibration = samplesPerSecond / freq;
-  int numVibrations = 10;
+  int numVibrations = 1;
   int numChannels = 1;
   int numSamples = samplesPerVibration * numVibrations * numChannels;
   int bufSizeBytes = numSamples * sizeof(short);
@@ -79,38 +79,40 @@ void* PlaySound(sf::Sound& sound, sf::SoundBuffer& buffer)
       theta = PI * (float)j / ((float)samplesPerVibration / 2.);
       *sample = volume * sin(theta);
       ++sample;
-      //*sample = volume * sin(theta);
-      //++sample;
     }
     for (int k = 0; k < (samplesPerVibration / 2); ++k)
     {
       theta = PI * (float)k / ((float)samplesPerVibration / 2.);
       *sample = -volume * sin(theta);
       ++sample;
-      //*sample = -volume * sin(theta);
-      //++sample;
     }
   }
 
   buffer.loadFromSamples((const short*)sampleBuf, numSamples, numChannels, 44100);
   sound.setBuffer(buffer);
   sound.setLoop(true);
-  ///////
   sf::Listener::setPosition(400.f, 0.f, 300.f);
   sf::Listener::setDirection(0.f, 0.f, 1.f);
+  sf::Listener::setGlobalVolume(100.f);
+
   sound.setPosition(2.f, 0.f, -5.f);
-  sound.setMinDistance(5.f);
-  sound.setAttenuation(0.1);
-  ///////
+  sound.setMinDistance(40.f);
+  sound.setAttenuation(2.f);
 
   sound.play();
 
   return sampleBuf;
 }
 
+#define QUOTE(name) #name
+#define STR(macro) QUOTE(macro)
+#define LIBSDIR STR(LIBS_DIR)
 int main(int, char const**)
 {
-  const char *lib_name = "./handmade.dylib";
+  char lib_name[100];
+  strcpy(lib_name, LIBSDIR);
+  strcat(lib_name, "/handmade/libhandmade.dylib");
+  
   long new_game_modified_time = 0;
   long old_game_modified_time = 0;
 
@@ -151,7 +153,7 @@ int main(int, char const**)
   auto diff = now - last;
   int msElapsed;
   int fps;
-  int fpsTarget = 30;
+  int fpsTarget = 60;
   int msTarget = 1000 / fpsTarget;
 
   int mouseX;
@@ -213,7 +215,7 @@ int main(int, char const**)
       {
         mouseX = event.mouseMove.x;
         mouseY = event.mouseMove.y;
-        sound.setPosition(mouseX, 0.f, mouseY);
+        sound.setPosition(800 - mouseX, 0.f, 600 - mouseY);
       }
     }
 
