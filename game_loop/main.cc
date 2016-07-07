@@ -18,7 +18,7 @@
 #define Megabytes(x) 1024 * Kilobytes(x)
 #define Gigabytes(x) 1024 * Megabytes(x)
 
-static const int bufWidth = 1024;
+static const int bufWidth = 1366;
 static const int bufHeight = 768;
 static const int bytesPerPixel = 4;
 
@@ -126,7 +126,7 @@ int main(int, char const**)
   void* sampleBuf = PlaySound(sound, buffer);
 
   int bufMemSize = bufHeight * bufWidth * bytesPerPixel;
-  void* bufMem = Allocate((bufMemSize / pageSize) * pageSize);
+  void* bufMem = Allocate((1 + (bufMemSize / pageSize)) * pageSize);
   GameOffscreenBuffer offscreenBuffer;
   offscreenBuffer.width = bufWidth; 
   offscreenBuffer.height = bufHeight;
@@ -159,7 +159,9 @@ int main(int, char const**)
   int mouseX;
   int mouseY;
 
-  sf::RenderWindow window(sf::VideoMode(800, 600), "handmade");//TODO where are window dimensions stored??
+  int windowWidth = 1366;
+  int windowHeight= 768;
+  sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "handmade", sf::Style::Fullscreen);
   window.setKeyRepeatEnabled(false);
   while (window.isOpen())
   {
