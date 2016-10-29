@@ -1,47 +1,75 @@
 #include "handmade.h"
+#include <algorithm>
 
-void RenderGradient(void* pixels, int width, int height, unsigned char xOffset, unsigned char yOffset)
+void DrawSquare(void* pixels, int frameWidth, int frameHeight, int x, int y, int width, int height, Vec3 color)
 {
+  using namespace std;
+
+  int minWidth = max(x, 0);
+  int minHeight = max(y, 0);
+  int maxWidth = min(x + width, frameWidth);
+  int maxHeight = min(y + height, frameHeight);
+
   unsigned char* pixel = (unsigned char*)pixels;
+  pixel += (4 * (y * frameWidth));
+  pixel += (4 * x);
 
-  for (int i = 0; i < height; ++i)
+  for (int i = y; i < maxHeight; ++i)
   {
-    for (int j = 0; j < width; ++j)
+    for (int j = x; j < maxWidth; ++j)
     {
-      *pixel = 0; 
+      *pixel = color.r; 
       ++pixel;
 
-      *pixel = i + 5 * yOffset;
+      *pixel = color.g;
       ++pixel;
 
-      *pixel = j + 5 * xOffset;
+      *pixel = color.b;
       ++pixel;
 
       *pixel = 255;
       ++pixel;
     }
+
+    pixel += (4 * (frameWidth - width));
   }  
 }
 
 void Initialize(GameMemory& memory)
 {
-  PermanentState zeroState = {};
-  memory.permanentState = zeroState;
+  memory.permanentState = {}; 
   memory.isInitialized = true;
 }
 
-void GameUpdateAndRender(GameMemory& memory, GameOffscreenBuffer& offscreenBuffer, GameInput& input)
+void GameUpdateAndRender(GameMemory& memory, GameOffscreenBuffer& offscreenBuffer, GameInput& input, float y)
 {
-  if (input.wKey)
-    ++memory.permanentState.yOffset;
-  if (input.aKey)
-    ++memory.permanentState.xOffset;
-  if (input.sKey)
-    --memory.permanentState.yOffset;
-  if (input.dKey)
-    --memory.permanentState.xOffset;
+  //if (input.wKey)
+  //  ++memory.permanentState.yOffset;
+  //if (input.aKey)
+  //  ++memory.permanentState.xOffset;
+  //if (input.sKey)
+  //  --memory.permanentState.yOffset;
+  //if (input.dKey)
+  //  --memory.permanentState.xOffset;
+  // clear screen
+  DrawSquare(offscreenBuffer.pixels, offscreenBuffer.width, offscreenBuffer.height, 0, 0, offscreenBuffer.width, offscreenBuffer.height, black); 
 
-  RenderGradient(offscreenBuffer.pixels, offscreenBuffer.width, offscreenBuffer.height, memory.permanentState.xOffset, memory.permanentState.yOffset);
+  int scale = 50;
+  memory.permanentState.yOffset = (y-1) * scale;
+
+  int cubeX = .1 * offscreenBuffer.width; 
+  int cubeY = .8 * offscreenBuffer.height  - memory.permanentState.yOffset;
+  int cubeHeight = .1 * offscreenBuffer.height + 1; 
+  int cubeWidth = cubeHeight; 
+
+  DrawSquare(offscreenBuffer.pixels, offscreenBuffer.width, offscreenBuffer.height, cubeX, cubeY, cubeWidth, cubeHeight, green);
+
+  int floorX = 0; 
+  int floorY = .9 * offscreenBuffer.height;
+  int floorWidth = offscreenBuffer.width;
+  int floorHeight = .1 * offscreenBuffer.height; 
+
+  DrawSquare(offscreenBuffer.pixels, offscreenBuffer.width, offscreenBuffer.height, floorX, floorY, floorWidth, floorHeight, blue); 
 }
 
 Fns fns = { Initialize, GameUpdateAndRender };

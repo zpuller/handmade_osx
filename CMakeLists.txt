@@ -9,5 +9,5 @@ add_definitions(-DLIBS_DIR=${LIBS_ROOT})
 add_definitions(-std=c++11)
 set(CMAKE_CXX_FLAGS "-O2")
 
-add_subdirectory(game_loop)
 add_subdirectory(libs)
+add_subdirectory(game_loop)

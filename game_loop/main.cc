@@ -1,3 +1,5 @@
+#include <Box2D/Box2D.h>
+
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
 
@@ -91,13 +93,6 @@ void* PlaySound(sf::Sound& sound, sf::SoundBuffer& buffer)
   buffer.loadFromSamples((const short*)sampleBuf, numSamples, numChannels, 44100);
   sound.setBuffer(buffer);
   sound.setLoop(true);
-  sf::Listener::setPosition(400.f, 0.f, 300.f);
-  sf::Listener::setDirection(0.f, 0.f, 1.f);
-  sf::Listener::setGlobalVolume(100.f);
-
-  sound.setPosition(2.f, 0.f, -5.f);
-  sound.setMinDistance(40.f);
-  sound.setAttenuation(2.f);
 
   sound.play();
 
@@ -107,8 +102,30 @@ void* PlaySound(sf::Sound& sound, sf::SoundBuffer& buffer)
 #define QUOTE(name) #name
 #define STR(macro) QUOTE(macro)
 #define LIBSDIR STR(LIBS_DIR)
-int main(int, char const**)
+int main(int argc, char const** argv)
 {
+  B2_NOT_USED(argc);
+  B2_NOT_USED(argv);
+  b2Vec2 gravity(0.0f, -10.0f);
+  b2World world(gravity);
+  b2BodyDef groundBodyDef;
+  groundBodyDef.position.Set(0.0f, -10.0f);
+  b2Body* groundBody = world.CreateBody(&groundBodyDef);
+  b2PolygonShape groundBox;
+  groundBox.SetAsBox(50.0f, 10.0f);
+  groundBody->CreateFixture(&groundBox, 0.0f);
+  b2BodyDef bodyDef;
+  bodyDef.type = b2_dynamicBody;
+  bodyDef.position.Set(0.0f, 4.0f);
+  b2Body* body = world.CreateBody(&bodyDef);
+  b2PolygonShape dynamicBox;
+  dynamicBox.SetAsBox(1.0f, 1.0f);
+  b2FixtureDef fixtureDef;
+  fixtureDef.shape = &dynamicBox;
+  fixtureDef.density = 1.0f;
+  fixtureDef.friction = 0.3f;
+  body->CreateFixture(&fixtureDef);
+
   char lib_name[100];
   strcpy(lib_name, LIBSDIR);
   strcat(lib_name, "/handmade/libhandmade.dylib");
@@ -123,7 +140,7 @@ int main(int, char const**)
 
   sf::Sound sound;
   sf::SoundBuffer buffer;
-  void* sampleBuf = PlaySound(sound, buffer);
+  //void* sampleBuf = PlaySound(sound, buffer);
 
   int bufMemSize = bufHeight * bufWidth * bytesPerPixel;
   void* bufMem = Allocate((1 + (bufMemSize / pageSize)) * pageSize);
@@ -163,8 +180,20 @@ int main(int, char const**)
   int windowHeight= 768;
   sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "handmade", sf::Style::Fullscreen);
   window.setKeyRepeatEnabled(false);
+  int counter = 0;
+  b2Vec2 position = body->GetPosition();
   while (window.isOpen())
   {
+    if (counter < 60)
+    {
+      ++counter;
+      float32 timeStep = 1.0f / 60.0f;
+      int32 velocityIterations = 6;
+      int32 positionIterations = 2;
+      world.Step(timeStep, velocityIterations, positionIterations);
+      position = body->GetPosition();
+    }
+
     new_game_modified_time = GetFileCreationTime(lib_name);
     if (new_game_modified_time != old_game_modified_time)
     {
@@ -173,7 +202,7 @@ int main(int, char const**)
       fns = (Fns*)dlsym(lib_handle, "fns");
     }
     old_game_modified_time = new_game_modified_time;
-    fns->GameUpdateAndRender(*gameMem, offscreenBuffer, input);
+    fns->GameUpdateAndRender(*gameMem, offscreenBuffer, input, position.y);
 
     sf::Image image;
     image.create(bufWidth,bufHeight,(unsigned char*)bufMem);
@@ -217,7 +246,6 @@ int main(int, char const**)
       {
         mouseX = event.mouseMove.x;
         mouseY = event.mouseMove.y;
-        sound.setPosition(800 - mouseX, 0.f, 600 - mouseY);
       }
     }
 
