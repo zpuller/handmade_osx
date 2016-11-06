@@ -48,9 +48,5 @@ struct GameInput
   int mouseY;
 };
 
-// hack
-struct Fns
-{
-  void (*Initialize)(GameMemory&);
-  void (*GameUpdateAndRender)(GameMemory&, GameOffscreenBuffer&, GameInput&, float&, float&, bool&);
-};
+void Initialize(GameMemory&);
+void GameUpdateAndRender(GameMemory&, GameOffscreenBuffer&, GameInput&, float&, float&, bool&);

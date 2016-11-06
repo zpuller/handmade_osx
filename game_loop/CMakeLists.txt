@@ -9,4 +9,5 @@ include_directories(${SFML_INCLUDE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/libs)
 target_link_libraries(game ${SFML_LIBRARIES})
 target_link_libraries(game Box2D)
+target_link_libraries(game handmade)
 

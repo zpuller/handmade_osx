@@ -126,18 +126,6 @@ int main(int argc, char const** argv)
   fixtureDef.friction = 0.3f;
   body->CreateFixture(&fixtureDef);
 
-  char lib_name[100];
-  strcpy(lib_name, LIBSDIR);
-  strcat(lib_name, "/handmade/libhandmade.dylib");
-  
-  long new_game_modified_time = 0;
-  long old_game_modified_time = 0;
-
-  void *lib_handle = dlopen(lib_name, RTLD_NOW);
-  assert(lib_handle);
-  Fns* fns = (Fns*)dlsym(lib_handle, "fns");
-  assert(fns);
-
   sf::Sound sound;
   sf::SoundBuffer buffer;
   //void* sampleBuf = PlaySound(sound, buffer);
@@ -152,7 +140,7 @@ int main(int argc, char const** argv)
   GameInput input = {};
 
   GameMemory* gameMem = (GameMemory*)Allocate(Kilobytes(4));
-  fns->Initialize(*gameMem);
+  Initialize(*gameMem);
 
 #ifdef DEBUG
   sf::Font MyFont;
@@ -187,20 +175,12 @@ int main(int argc, char const** argv)
     world.Step(timeStep, velocityIterations, positionIterations);
     position = body->GetPosition();
 
-    new_game_modified_time = GetFileCreationTime(lib_name);
-    if (new_game_modified_time != old_game_modified_time)
-    {
-      dlclose(lib_handle);
-      lib_handle = dlopen(lib_name, RTLD_NOW);
-      fns = (Fns*)dlsym(lib_handle, "fns");
-    }
-    old_game_modified_time = new_game_modified_time;
     float posx = position.x;
     float posy = position.y;
     float ox = posx;
     float oy = posy;
 
-    fns->GameUpdateAndRender(*gameMem, offscreenBuffer, input, posx, posy, clicked);
+    GameUpdateAndRender(*gameMem, offscreenBuffer, input, posx, posy, clicked);
     if (clicked)
     {
       body->SetAwake(true);
@@ -292,8 +272,6 @@ int main(int argc, char const** argv)
 
     window.display();
   }
-
-  dlclose(lib_handle);
 
   return 0;
 }

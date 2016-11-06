@@ -14,9 +14,9 @@ void DrawSquare(void* pixels, int frameWidth, int frameHeight, int x, int y, int
   pixel += (4 * (y * frameWidth));
   pixel += (4 * x);
 
-  for (int i = y; i < maxHeight; ++i)
+  for (int i = minHeight; i < maxHeight; ++i)
   {
-    for (int j = x; j < maxWidth; ++j)
+    for (int j = minWidth; j < maxWidth; ++j)
     {
       *pixel = color.r; 
       ++pixel;
@@ -78,5 +78,3 @@ void GameUpdateAndRender(GameMemory& memory, GameOffscreenBuffer& offscreenBuffe
 
   DrawSquare(offscreenBuffer.pixels, offscreenBuffer.width, offscreenBuffer.height, floorX, floorY, floorWidth, floorHeight, blue); 
 }
-
-Fns fns = { Initialize, GameUpdateAndRender };
