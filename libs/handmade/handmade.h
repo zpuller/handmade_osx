@@ -40,11 +40,17 @@ struct GameInput
   bool aKey;
   bool sKey;
   bool dKey;
+  
+  bool lMouse;
+  bool rMouse;
+
+  int mouseX;
+  int mouseY;
 };
 
 // hack
 struct Fns
 {
   void (*Initialize)(GameMemory&);
-  void (*GameUpdateAndRender)(GameMemory&, GameOffscreenBuffer&, GameInput&, float);
+  void (*GameUpdateAndRender)(GameMemory&, GameOffscreenBuffer&, GameInput&, float&, float&, bool&);
 };

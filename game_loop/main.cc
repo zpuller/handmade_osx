@@ -173,26 +173,19 @@ int main(int argc, char const** argv)
   int fpsTarget = 60;
   int msTarget = 1000 / fpsTarget;
 
-  int mouseX;
-  int mouseY;
-
   int windowWidth = 1366;
   int windowHeight= 768;
   sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "handmade", sf::Style::Fullscreen);
   window.setKeyRepeatEnabled(false);
-  int counter = 0;
   b2Vec2 position = body->GetPosition();
+  bool clicked = false;
   while (window.isOpen())
   {
-    if (counter < 60)
-    {
-      ++counter;
-      float32 timeStep = 1.0f / 60.0f;
-      int32 velocityIterations = 6;
-      int32 positionIterations = 2;
-      world.Step(timeStep, velocityIterations, positionIterations);
-      position = body->GetPosition();
-    }
+    float32 timeStep = 1.0f / 60.0f;
+    int32 velocityIterations = 6;
+    int32 positionIterations = 2;
+    world.Step(timeStep, velocityIterations, positionIterations);
+    position = body->GetPosition();
 
     new_game_modified_time = GetFileCreationTime(lib_name);
     if (new_game_modified_time != old_game_modified_time)
@@ -202,7 +195,18 @@ int main(int argc, char const** argv)
       fns = (Fns*)dlsym(lib_handle, "fns");
     }
     old_game_modified_time = new_game_modified_time;
-    fns->GameUpdateAndRender(*gameMem, offscreenBuffer, input, position.y);
+    float posx = position.x;
+    float posy = position.y;
+    float ox = posx;
+    float oy = posy;
+
+    fns->GameUpdateAndRender(*gameMem, offscreenBuffer, input, posx, posy, clicked);
+    if (clicked)
+    {
+      body->SetAwake(true);
+      body->SetTransform(b2Vec2(posx, posy), 0.0f);
+      body->SetLinearVelocity(20*b2Vec2(posx-ox, posy-oy));
+    }
 
     sf::Image image;
     image.create(bufWidth,bufHeight,(unsigned char*)bufMem);
@@ -242,10 +246,20 @@ int main(int argc, char const** argv)
           input.dKey = false;
       }
 
+      if (event.type == sf::Event::MouseButtonPressed)
+      {
+        input.lMouse = true;
+      }
+
+      if (event.type == sf::Event::MouseButtonReleased)
+      {
+        input.lMouse = false;
+      }
+
       if (event.type == sf::Event::MouseMoved)
       {
-        mouseX = event.mouseMove.x;
-        mouseY = event.mouseMove.y;
+        input.mouseX = event.mouseMove.x;
+        input.mouseY = event.mouseMove.y;
       }
     }
 
@@ -271,7 +285,7 @@ int main(int argc, char const** argv)
 
 #ifdef DEBUG
     char fpsStr[2];
-    sprintf(fpsStr, "%i fps . mouseX: %i . mouseY: %i", fps, mouseX, mouseY);
+    sprintf(fpsStr, "%i fps . posx: %10g . posy: %10g . %i", fps, posx, posy, clicked); 
     text.setString(fpsStr);
     window.draw(text);
 #endif

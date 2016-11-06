@@ -41,28 +41,35 @@ void Initialize(GameMemory& memory)
   memory.isInitialized = true;
 }
 
-void GameUpdateAndRender(GameMemory& memory, GameOffscreenBuffer& offscreenBuffer, GameInput& input, float y)
+void GameUpdateAndRender(GameMemory& memory, GameOffscreenBuffer& offscreenBuffer, GameInput& input, float& x, float& y, bool& clicked)
 {
-  //if (input.wKey)
-  //  ++memory.permanentState.yOffset;
-  //if (input.aKey)
-  //  ++memory.permanentState.xOffset;
-  //if (input.sKey)
-  //  --memory.permanentState.yOffset;
-  //if (input.dKey)
-  //  --memory.permanentState.xOffset;
   // clear screen
   DrawSquare(offscreenBuffer.pixels, offscreenBuffer.width, offscreenBuffer.height, 0, 0, offscreenBuffer.width, offscreenBuffer.height, black); 
 
   int scale = 50;
-  memory.permanentState.yOffset = (y-1) * scale;
+  memory.permanentState.xOffset = x * scale;
+  memory.permanentState.yOffset = (1-y) * scale;
 
-  int cubeX = .1 * offscreenBuffer.width; 
-  int cubeY = .8 * offscreenBuffer.height  - memory.permanentState.yOffset;
+  int cubeX = .1 * offscreenBuffer.width + memory.permanentState.xOffset; 
+  int cubeY = .8 * offscreenBuffer.height  + memory.permanentState.yOffset;
   int cubeHeight = .1 * offscreenBuffer.height + 1; 
   int cubeWidth = cubeHeight; 
 
-  DrawSquare(offscreenBuffer.pixels, offscreenBuffer.width, offscreenBuffer.height, cubeX, cubeY, cubeWidth, cubeHeight, green);
+  Vec3 color = green;
+  clicked &= input.lMouse;
+  if (clicked || (input.lMouse && input.mouseX > cubeX && input.mouseX < cubeX + cubeWidth && input.mouseY > cubeY && input.mouseY < cubeY + cubeHeight))
+  {
+    color = blue;
+    clicked = true;
+    x = (input.mouseX - (.13 * offscreenBuffer.width)) / scale;
+    y = std::max(0.0, 1 - ((input.mouseY - (.85 * offscreenBuffer.height)) / scale));
+  }
+  else
+  {
+    clicked = false;
+  }
+
+  DrawSquare(offscreenBuffer.pixels, offscreenBuffer.width, offscreenBuffer.height, cubeX, cubeY, cubeWidth, cubeHeight, color);
 
   int floorX = 0; 
   int floorY = .9 * offscreenBuffer.height;
