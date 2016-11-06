@@ -11,3 +11,4 @@ set(CMAKE_CXX_FLAGS "-O2 -Wno-null-conversion")
 
 add_subdirectory(libs)
 add_subdirectory(game_loop)
+add_subdirectory(benchmark)

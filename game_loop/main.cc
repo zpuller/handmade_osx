@@ -6,7 +6,6 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <math.h>
-#include <dlfcn.h>
 #include <sys/stat.h>
 
 #include <mach/mach_init.h>
