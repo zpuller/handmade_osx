@@ -11,8 +11,8 @@ void DrawSquare(void* pixels, int frameWidth, int frameHeight, int x, int y, int
   int maxHeight = min(y + height, frameHeight);
 
   unsigned char* pixel = (unsigned char*)pixels;
-  pixel += (4 * (y * frameWidth));
-  pixel += (4 * x);
+  pixel += (4 * (minHeight * frameWidth));
+  pixel += (4 * minWidth);
 
   for (int i = minHeight; i < maxHeight; ++i)
   {
@@ -31,24 +31,55 @@ void DrawSquare(void* pixels, int frameWidth, int frameHeight, int x, int y, int
       ++pixel;
     }
 
-    pixel += (4 * (frameWidth - width));
+    pixel += (4 * (frameWidth - maxWidth + minWidth));
   }  
 }
 
 void Initialize(GameMemory& memory)
 {
+  b2Vec2 gravity(0.0f, -10.0f);
+  memory.world.reset(new b2World(gravity));
+  b2BodyDef groundBodyDef;
+  groundBodyDef.position.Set(0.0f, -10.0f);
+  b2Body* groundBody = memory.world->CreateBody(&groundBodyDef);
+  b2PolygonShape groundBox;
+  groundBox.SetAsBox(50.0f, 10.0f);
+  groundBody->CreateFixture(&groundBox, 0.0f);
+  b2BodyDef bodyDef;
+  bodyDef.type = b2_dynamicBody;
+  bodyDef.position.Set(0.0f, 4.0f);
+  memory.body = memory.world->CreateBody(&bodyDef);
+  b2PolygonShape dynamicBox;
+  dynamicBox.SetAsBox(1.0f, 1.0f);
+  b2FixtureDef fixtureDef;
+  fixtureDef.shape = &dynamicBox;
+  fixtureDef.density = 1.0f;
+  fixtureDef.friction = 0.3f;
+  memory.body->CreateFixture(&fixtureDef);
+
   memory.permanentState = {}; 
   memory.isInitialized = true;
 }
 
-void GameUpdateAndRender(GameMemory& memory, GameOffscreenBuffer& offscreenBuffer, GameInput& input, float& x, float& y, bool& clicked)
+void GameUpdateAndRender(GameMemory& memory, GameOffscreenBuffer& offscreenBuffer, GameInput& input)
 {
+  float32 timeStep = 1.0f / 60.0f;
+  int32 velocityIterations = 6;
+  int32 positionIterations = 2;
+  memory.world->Step(timeStep, velocityIterations, positionIterations);
+  b2Vec2 position = memory.body->GetPosition();
+
+  float posx = position.x;
+  float posy = position.y;
+  float ox = posx;
+  float oy = posy;
+
   // clear screen
   DrawSquare(offscreenBuffer.pixels, offscreenBuffer.width, offscreenBuffer.height, 0, 0, offscreenBuffer.width, offscreenBuffer.height, black); 
 
   int scale = 50;
-  memory.permanentState.xOffset = x * scale;
-  memory.permanentState.yOffset = (1-y) * scale;
+  memory.permanentState.xOffset = posx * scale;
+  memory.permanentState.yOffset = (1-posy) * scale;
 
   int cubeX = .1 * offscreenBuffer.width + memory.permanentState.xOffset; 
   int cubeY = .8 * offscreenBuffer.height  + memory.permanentState.yOffset;
@@ -56,13 +87,18 @@ void GameUpdateAndRender(GameMemory& memory, GameOffscreenBuffer& offscreenBuffe
   int cubeWidth = cubeHeight; 
 
   Vec3 color = green;
+  bool& clicked = memory.permanentState.clicked;
   clicked &= input.lMouse;
   if (clicked || (input.lMouse && input.mouseX > cubeX && input.mouseX < cubeX + cubeWidth && input.mouseY > cubeY && input.mouseY < cubeY + cubeHeight))
   {
     color = blue;
     clicked = true;
-    x = (input.mouseX - (.13 * offscreenBuffer.width)) / scale;
-    y = std::max(0.0, 1 - ((input.mouseY - (.85 * offscreenBuffer.height)) / scale));
+    posx = (input.mouseX - (.13 * offscreenBuffer.width)) / scale;
+    posy = std::max(0.0, 1 - ((input.mouseY - (.85 * offscreenBuffer.height)) / scale));
+
+    memory.body->SetAwake(true);
+    memory.body->SetTransform(b2Vec2(posx, posy), 0.0f);
+    memory.body->SetLinearVelocity(20*b2Vec2(posx-ox, posy-oy));
   }
   else
   {

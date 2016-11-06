@@ -1,5 +1,3 @@
-#include <Box2D/Box2D.h>
-
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
 
@@ -27,12 +25,6 @@ static const int bytesPerPixel = 4;
 static const int pageSize = Kilobytes(4);
 
 static const float PI = 3.14159265;
-
-long GetFileCreationTime(const char *path) {
-    struct stat attr;
-    stat(path, &attr);
-    return attr.st_mtime;
-}
 
 unsigned long long CycleCount() 
 {
@@ -104,28 +96,6 @@ void* PlaySound(sf::Sound& sound, sf::SoundBuffer& buffer)
 #define LIBSDIR STR(LIBS_DIR)
 int main(int argc, char const** argv)
 {
-  B2_NOT_USED(argc);
-  B2_NOT_USED(argv);
-  b2Vec2 gravity(0.0f, -10.0f);
-  b2World world(gravity);
-  b2BodyDef groundBodyDef;
-  groundBodyDef.position.Set(0.0f, -10.0f);
-  b2Body* groundBody = world.CreateBody(&groundBodyDef);
-  b2PolygonShape groundBox;
-  groundBox.SetAsBox(50.0f, 10.0f);
-  groundBody->CreateFixture(&groundBox, 0.0f);
-  b2BodyDef bodyDef;
-  bodyDef.type = b2_dynamicBody;
-  bodyDef.position.Set(0.0f, 4.0f);
-  b2Body* body = world.CreateBody(&bodyDef);
-  b2PolygonShape dynamicBox;
-  dynamicBox.SetAsBox(1.0f, 1.0f);
-  b2FixtureDef fixtureDef;
-  fixtureDef.shape = &dynamicBox;
-  fixtureDef.density = 1.0f;
-  fixtureDef.friction = 0.3f;
-  body->CreateFixture(&fixtureDef);
-
   sf::Sound sound;
   sf::SoundBuffer buffer;
   //void* sampleBuf = PlaySound(sound, buffer);
@@ -165,28 +135,9 @@ int main(int argc, char const** argv)
   int windowHeight= 768;
   sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "handmade", sf::Style::Fullscreen);
   window.setKeyRepeatEnabled(false);
-  b2Vec2 position = body->GetPosition();
-  bool clicked = false;
   while (window.isOpen())
   {
-    float32 timeStep = 1.0f / 60.0f;
-    int32 velocityIterations = 6;
-    int32 positionIterations = 2;
-    world.Step(timeStep, velocityIterations, positionIterations);
-    position = body->GetPosition();
-
-    float posx = position.x;
-    float posy = position.y;
-    float ox = posx;
-    float oy = posy;
-
-    GameUpdateAndRender(*gameMem, offscreenBuffer, input, posx, posy, clicked);
-    if (clicked)
-    {
-      body->SetAwake(true);
-      body->SetTransform(b2Vec2(posx, posy), 0.0f);
-      body->SetLinearVelocity(20*b2Vec2(posx-ox, posy-oy));
-    }
+    GameUpdateAndRender(*gameMem, offscreenBuffer, input);
 
     sf::Image image;
     image.create(bufWidth,bufHeight,(unsigned char*)bufMem);
@@ -265,7 +216,7 @@ int main(int argc, char const** argv)
 
 #ifdef DEBUG
     char fpsStr[2];
-    sprintf(fpsStr, "%i fps . posx: %10g . posy: %10g . %i", fps, posx, posy, clicked); 
+    sprintf(fpsStr, "%i fps", fps); 
     text.setString(fpsStr);
     window.draw(text);
 #endif

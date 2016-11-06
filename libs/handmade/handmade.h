@@ -1,3 +1,7 @@
+#include <Box2D/Box2D.h>
+
+#include <memory>
+
 struct Vec3
 {
   unsigned char r;
@@ -14,6 +18,7 @@ struct PermanentState
 {
   int xOffset;
   int yOffset;
+  bool clicked;
 };
 
 struct TransientState 
@@ -22,6 +27,8 @@ struct TransientState
 
 struct GameMemory
 {
+  std::unique_ptr<b2World> world;
+  b2Body* body;
   bool isInitialized;
   PermanentState permanentState;
   TransientState transientState;
@@ -49,4 +56,4 @@ struct GameInput
 };
 
 void Initialize(GameMemory&);
-void GameUpdateAndRender(GameMemory&, GameOffscreenBuffer&, GameInput&, float&, float&, bool&);
+void GameUpdateAndRender(GameMemory&, GameOffscreenBuffer&, GameInput&);

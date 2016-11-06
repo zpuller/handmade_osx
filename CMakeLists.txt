@@ -7,7 +7,7 @@ set(LIBS_ROOT "${CMAKE_BINARY_DIR}/libs")
 add_definitions(-DLIBS_DIR=${LIBS_ROOT})
 
 add_definitions(-std=c++11)
-set(CMAKE_CXX_FLAGS "-O2")
+set(CMAKE_CXX_FLAGS "-O2 -Wno-null-conversion")
 
 add_subdirectory(libs)
 add_subdirectory(game_loop)
