@@ -1,4 +1,5 @@
 build/
+libs/Box2D
 *.o
 *.dylib
 *.swp
